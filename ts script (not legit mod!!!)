@@ -1,0 +1,123 @@
+  if not game.Players.LocalPlayer:IsInGroup(10364016) then
+    coroutine.resume(coroutine.create(function()
+       wait(3)
+       game.StarterGui:SetCore("SendNotification", {
+        Title = 'Join our Roblox group';
+        Text = 'youre still able to use the script but join the roblox group, paste it in your url enter and join it to support';
+        Duration = 10;
+       })
+       setclipboard('https://www.roblox.com/groups/10364016/sukie#!/about')
+    end))
+  end
+end)
+loadstring(game:HttpGet("https://raw.githubusercontent.com/zvzi/scropts/main/private%20lol%20dont%20use%20this"))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
+local Window = Library.CreateLib("Loot Legit Mode", "GrapeTheme")
+local Tab = Window:NewTab("Main Scripts")
+local Section = Tab:NewSection("Main Scripts")
+Section:NewKeybind("Reset w/ Keybind", "Press X to reset!!", Enum.KeyCode.X, function()
+    game.Players.LocalPlayer.Character.Humanoid.Health = 0
+end)
+Section:NewToggle("AntiSlow", "shoot/attack without being slown down", function(state)
+    if state then
+    	if game.PlaceId == 4669040 then
+local mt = getrawmetatable(game)
+local backup
+backup = hookfunction(mt.__newindex, newcclosure(function(self, key, value)
+if key == "WalkSpeed" and value < 16 then
+value = 16
+end
+return backup(self, key, value)
+else
+game.Players.LocalPlayer.Character.Humanoid.Health = 0
+end)
+Section:NewSlider("Speed", "Slide the slider down or up, indicating how fast player will be", 500, 0, function(s) -- 500 (MaxValue) | 0 (MinValue)
+    game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = s
+end)
+Section:NewSlider("FOV", "Field of View", 120, 70, function(s) -- 500 (MaxValue) | 0 (MinValue)
+    workspace.CurrentCamera.FieldOfView = f
+end)
+Section:NewButton("Aimlock [E]", "E TO AIMLOCK", function()
+getgenv().SelectTargetKey = "E" -- Must be Capital due to UserInputService
+getgenv().AimPart = "Torso" -- Head or Torso, Dont do HumanoidRootPart
+getgenv().AV = 5 -- Sets AimVelocity, if your ping is high make sure its 7-10 / if your ping is low make sure its 4-6
+
+local Players, Uis, RService = game:GetService("Players"), game:GetService("UserInputService"), game:GetService("RunService")
+local Client, Mouse, Camera, CF = Players.LocalPlayer, Players.LocalPlayer:GetMouse(), workspace.CurrentCamera, CFrame.new;
+local Aimlock, Selecting = true, false
+local StreetsID, PrisonID = tonumber(455366377), tonumber(4669040);
+
+Uis.InputBegan:Connect(function(Key, Typing)
+    if Typing then return end 
+    if Key.KeyCode == Enum.KeyCode[SelectTargetKey] then 
+        Selecting = true
+    end
+end)
+Uis.InputEnded:Connect(function(Key, Typing)
+    if Typing then return end 
+    if Key.KeyCode == Enum.KeyCode[SelectTargetKey] then 
+        Selecting = false
+    end
+end)
+
+RService.Stepped:Connect(function()
+    if Selecting == true and Mouse.Target.Parent:FindFirstChild("Humanoid") and Mouse.Target.Parent ~= Client.Character then
+		AimlockTarget = Players:FindFirstChild(Mouse.Target.Parent.Name)
+		Notify("LootWare", "youre now aimlocked onto... "..tostring(AimlockTarget), "", 3)
+	end
+end)
+
+getgenv().Notify = function(title, text, icon, time)
+    game.StarterGui:SetCore("SendNotification",{
+        Title = title;
+        Text = text;
+        Icon = "rbxassetid://0";
+        Duration = 3;
+    }) 
+end
+
+local rm = getrawmetatable(game) or debug.getrawmetatable(game) or getmetatable(game);
+local ncall = rm.__namecall 
+setreadonly(rm, false)
+
+rm.__namecall = newcclosure(function(self, ...)
+    local Ag = {...}
+    local Method = getnamecallmethod()
+    if Method == "FireServer" and Aimlock == true then 
+        if game.PlaceId ~= (PrisonID) and tostring(self) == "Input" and AimlockTarget ~= nil then
+            Ag[2].mousehit = AimlockTarget.Character[AimPart].CFrame + AimlockTarget.Character[AimPart].Velocity/AV
+            return ncall(self, unpack(Ag))
+        end
+        if game.PlaceId == (PrisonID) and tostring(self) == "Fire" and AimlockTarget ~= nil then
+            return ncall(self, AimlockTarget.Character[AimPart].CFrame + AimlockTarget.Character[AimPart].Velocity/AV)
+        end
+    end
+    return ncall(self, unpack(Ag))
+end)
+setreadonly(rm, true)
+end)
+Section:NewButton("Triggerbot", "trigur butt", function()
+local players = game:GetService("Players")
+local LocalP = players.LocalPlayer
+local tbotting = true
+
+for i, c in pairs(LocalP.Character:GetChildren()) do
+   c.ChildAdded:Connect(function(bullet)
+       if bullet.Name == "creator" then
+           local tbottarget = workspace:FindFirstChild(bullet.Value.Name)
+               for i, b in pairs(LocalP.Backpack:GetChildren()) do
+                   if b:IsA("Tool") and b:FindFirstChild("Fire") then
+                       b.Parent = LocalP.Character
+                   repeat
+                       wait()
+                       b.Fire:FireServer(tbottarget.Torso.CFrame + tbottarget.Torso.Velocity/5)
+                       LocalP.Character.HumanoidRootPart.CFrame = tbottarget.Head.CFrame + Vector3.new(0,2,0)
+                   until tbottarget:FindFirstChild("Bone", true) or LocalP.Character:FindFirstChild("KO") or LocalP.Character.Humanoid.Health == 0
+                   if tbottarget:FindFirstChild("Bone", true) or LocalP.Character:FindFirstChild("KO") or LocalP.Character.Humanoid.Health == 0 then
+                       tbottarget = nil
+                   end
+               end
+           end
+       end
+   end)
+end
